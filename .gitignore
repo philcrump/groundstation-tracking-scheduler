@@ -1,0 +1,6 @@
+*~
+*.swp
+*.o
+config.ini
+gss
+gss-client

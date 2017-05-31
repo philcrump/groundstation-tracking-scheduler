@@ -1,0 +1,3 @@
+[submodule "libpredict"]
+	path = libpredict
+	url = https://github.com/philcrump/libpredict.git
