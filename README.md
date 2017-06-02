@@ -11,8 +11,8 @@ Configuration parameters are set in *config.ini*, copy the template from *config
 `./gss`
 
 The application will:
- * Update TLEs if last updated > 15 minutes ago.
- * Recompute Satellite Tracks and Observations if new TLE or updated > 24 hours ago 
+ * Update TLE for a spacecraft if TLE last updated > 15 minutes ago.
+ * Recompute Satellite Tracks and Observations if new TLE or Track last updated > 24 hours ago.
  * Recompute Schedule if any Tracks have been updated since the last Schedule computation.
 
 ### Compile
@@ -23,15 +23,17 @@ Dependencies: libpq5 libpq-dev libcurl4-openssl-dev
 
 ### Database Setup
 
+Scripts in *sql/*
+
 **init_database.sql**
- * *Example* database setup script - please modify before use.
+ * _Example_ database setup script - please modify before use.
 
 **example_spacecraft.sql**
  * Populates the Spacecraft table with initial data for ISS & AO-73
 
 ## Example Client
 
-The 'example_client' folder contains an example database client application that, using computed schedule data, can be used as a realtime input for an AZ/EL Tracking System.
+The *example_client/* folder contains an example database client application that, using computed schedule data, can be used as a realtime input for an AZ/EL Tracking System.
 
 ### Compile
 
