@@ -1,10 +1,12 @@
 # Groundstation Tracking Scheduler
 
-This software aims to automate the computation of a tracking schedule for a satellite groundstation.
+This software aims to automate the computation of a tracking schedule for a satellite groundstation, using a list of spacecraft with associated unique priority levels.
 
-The Spacecraft, Track, Observation and Schedule data is stored in a PostgreSQL database. This allows external applications to modify input parameters and view computed output data through their own database interface.
+The Spacecraft, Track, Observation and Schedule data is stored in a PostgreSQL database. This allows external applications to modify input parameters and view computed output data through a generic PostgreSQL interface.
 
 ## Usage
+
+Configuration parameters are set in *config.ini*, copy the template from *config.ini.example*
 
 `./gss`
 
@@ -21,11 +23,15 @@ Dependencies: libpq5 libpq-dev libcurl4-openssl-dev
 
 ### Database Setup
 
-The 'sql/' folder contains a database setup script (note this will drop an existing database), and an example spacecraft data insertion script (populates ISS & AO-73)
+**init_database.sql**
+ * *Example* database setup script - please modify before use.
+
+**example_spacecraft.sql**
+ * Populates the Spacecraft table with initial data for ISS & AO-73
 
 ## Example Client
 
-The 'example_client' folder contains an example database client application that, using computed schedule data, can be used as a direct realtime input for an AZ/EL Tracking System.
+The 'example_client' folder contains an example database client application that, using computed schedule data, can be used as a realtime input for an AZ/EL Tracking System.
 
 ### Compile
 
