@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <libpq-fe.h> 
 #include <curl/curl.h>
@@ -31,11 +32,16 @@ void tle_update_http(PGconn *conn)
         tle_lines[1] = &tle_line[1][0];
 
         int row_id = atoi(PQgetvalue(res, i, 0));
-        printf(" * %s\n",PQgetvalue(res, i, 1));
         char *tle_source_url = PQgetvalue(res, i, 2);
         char *tle_source_uri = PQgetvalue(res, i, 3);
 
-        tle_download_http(tle_source_url, tle_source_uri, tle_line[0], tle_line[1]);
+        printf(" * %s\n",PQgetvalue(res, i, 1));
+
+        if(!tle_download_http(tle_source_url, tle_source_uri, tle_line[0], tle_line[1]))
+        {
+          fprintf(stderr, " * * Error: TLE Download failed!\n");
+          continue;
+        }
 
         predict_orbital_elements_t *tle;
         tle = predict_parse_tle((char **)tle_lines);
@@ -50,7 +56,7 @@ void tle_update_http(PGconn *conn)
         PGresult *sres = PQexecParams(conn, sql_stmt, 2, NULL, (const char * const*)tle_lines, NULL, NULL, 0);
         if(PQresultStatus(sres) != PGRES_COMMAND_OK)
         {
-            printf("Error: TLE Update failed! : %s\n", sql_stmt);
+            fprintf(stderr, " * * Error: TLE Database Update failed! : %s\n", sql_stmt);
         }
         PQclear(sres);
     }
@@ -79,15 +85,17 @@ void tle_update_spacetrack(PGconn *conn, char *user, char *password)
         tle_lines[0] = &tle_line[0][0];
         tle_lines[1] = &tle_line[1][0];
 
-        int row_id = atoi(PQgetvalue(res, i, 0));
         printf(" * %s\n",PQgetvalue(res, i, 1));
+
+        int row_id = atoi(PQgetvalue(res, i, 0));
         char *tle_source_url = PQgetvalue(res, i, 2);
         char *tle_source_uri = PQgetvalue(res, i, 3);
 
-        tle_download_spacetrack(tle_source_url
-                , user, password
-                , tle_source_uri, tle_line[0], tle_line[1]
-        );
+        if(!tle_download_spacetrack(tle_source_url, user, password, tle_source_uri, tle_line[0], tle_line[1]))
+        {
+          fprintf(stderr, " * * Error: TLE Download failed!\n");
+          continue;
+        }
 
         predict_orbital_elements_t *tle;
         tle = predict_parse_tle((char **)tle_lines);
@@ -99,10 +107,10 @@ void tle_update_spacetrack(PGconn *conn, char *user, char *password)
             , (tle->epoch_day-1)
             , row_id
         );
-	PGresult *sres = PQexecParams(conn, sql_stmt, 2, NULL, (const char * const*)tle_lines, NULL, NULL, 0);
+        PGresult *sres = PQexecParams(conn, sql_stmt, 2, NULL, (const char * const*)tle_lines, NULL, NULL, 0);
         if(PQresultStatus(sres) != PGRES_COMMAND_OK)
         {
-            printf("Error: TLE Update failed! : %s\n", sql_stmt);
+            fprintf(stderr, " * * Error: TLE Database Update failed! : %s\n", sql_stmt);
         }
         PQclear(sres);
     }
@@ -132,10 +140,12 @@ static size_t curl_buffer_cb(void *contents, size_t size, size_t nmemb, void *us
   return realsize;
 }
 
-int tle_extract(curl_buffer *tle_buffer, char *craft_uri, char *tle_0, char *tle_1)
+static bool tle_extract(curl_buffer *tle_buffer, char *craft_uri, char *tle_0, char *tle_1)
 {
   char *tle_line;
   const char newline[2] = "\n";
+
+  tle_buffer->memory[tle_buffer->size]='\0';
   tle_line = strtok(tle_buffer->memory, newline);
 
   while (tle_line != NULL)
@@ -145,15 +155,15 @@ int tle_extract(curl_buffer *tle_buffer, char *craft_uri, char *tle_0, char *tle
       /* Found spacecraft */
       strcpy(tle_0,strtok(NULL, newline));
       strcpy(tle_1,strtok(NULL, newline));
-      return 1;
+      return true;
     }
     tle_line = strtok(NULL, newline);
   }
   /* Failed to find spacecraft */
-  return 0;
+  return false;
 }
  
-int tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1)
+bool tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1)
 {
   CURL *curl_handle;
   CURLcode res;
@@ -176,34 +186,32 @@ int tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1)
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&tle_buffer);
  
   res = curl_easy_perform(curl_handle);
+
+  curl_easy_cleanup(curl_handle);
+  curl_global_cleanup();
  
   if(res != CURLE_OK)
   {
-    fprintf(stderr, "Error: Curl failed with error: %s\n",
+    fprintf(stderr, " * * * Error: Curl failed with error: %s\n",
       curl_easy_strerror(res));
-  }
-  else
-  {
-    tle_buffer.memory[tle_buffer.size]='\0';
 
-    if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
-    {
-      printf("Error: Spacecraft URI not found in downloaded TLE\n");
-    }
+  	free(tle_buffer.memory);
+  	return false;
   }
- 
-  /* cleanup curl stuff */ 
-  curl_easy_cleanup(curl_handle);
+
+	if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
+	{
+	  fprintf(stderr, " * * * Error: Spacecraft URI not found in downloaded TLE\n");
+
+	  free(tle_buffer.memory);
+	  return false;
+	}
  
   free(tle_buffer.memory);
- 
-  /* we're done with libcurl, so clean it up */ 
-  curl_global_cleanup();
- 
-  return 0;
+  return true;
 }
 
-int tle_download_spacetrack(char *url, char *user, char *password, char *craft_uri, char *tle_0, char *tle_1)
+bool tle_download_spacetrack(char *url, char *user, char *password, char *craft_uri, char *tle_0, char *tle_1)
 {
   CURL *curl_handle;
   CURLcode res;
@@ -228,30 +236,28 @@ int tle_download_spacetrack(char *url, char *user, char *password, char *craft_u
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&tle_buffer);
  
   res = curl_easy_perform(curl_handle);
+
+  curl_easy_cleanup(curl_handle);
+  curl_global_cleanup();
  
   if(res != CURLE_OK)
   {
-    fprintf(stderr, "Error: Curl failed with error: %s\n",
+    fprintf(stderr, " * * * Error: Curl failed with error: %s\n",
       curl_easy_strerror(res));
-  }
-  else
-  {
-    tle_buffer.memory[tle_buffer.size]='\0';
 
-    if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
-    {
-      printf("Error: Spacecraft URI not found in downloaded TLE\n");
-    }
+    free(tle_buffer.memory);
+    return false;
   }
- 
-  /* cleanup curl stuff */ 
-  curl_easy_cleanup(curl_handle);
+  
+  if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
+  {
+    fprintf(stderr, " * * * Error: Spacecraft URI not found in downloaded TLE\n");
+
+    free(tle_buffer.memory);
+    return false;
+  }
  
   free(tle_buffer.memory);
- 
-  /* we're done with libcurl, so clean it up */ 
-  curl_global_cleanup();
- 
-  return 0;
+  return true;
 }
 
