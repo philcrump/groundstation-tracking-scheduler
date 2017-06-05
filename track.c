@@ -80,11 +80,12 @@ void track_update_all(PGconn *conn)
 	
             predict_observe_orbit(observer, &orbit, &observation);
 	    sprintf( sql_stmt
-                , "INSERT into observations VALUES ((TIMESTAMP 'epoch' + INTERVAL '%ld seconds'),%d, %f,%f, %f,%f) ON CONFLICT (spacecraft, time) DO UPDATE SET azimuth = excluded.azimuth, azimuth_rate = excluded.azimuth_rate, elevation = excluded.elevation, elevation_rate = excluded.elevation_rate;"
+                , "INSERT into observations VALUES ((TIMESTAMP 'epoch' + INTERVAL '%ld seconds'),%d, %f,%f, %f,%f, %f) ON CONFLICT (spacecraft, time) DO UPDATE SET azimuth = excluded.azimuth, azimuth_rate = excluded.azimuth_rate, elevation = excluded.elevation, elevation_rate = excluded.elevation_rate;"
                  , calc_timestamp_ms/1000
                  , spacecraft_id
                  , observation.azimuth, observation.azimuth_rate
                  , observation.elevation, observation.elevation_rate
+                 , (observation.range_rate*1000)
             );
             //printf("%s\n",sql_stmt);
             calc_res = PQexec(conn,sql_stmt);

@@ -13,6 +13,8 @@ CREATE TABLE spacecraft
   id serial NOT NULL,
   name character varying(250) NOT NULL,
   priority integer NOT NULL,
+  frequency_downlink double precision,
+  frequency_uplink double precision,
   tle_source_type tle_source_enum,
   tle_source_url character varying(1024),
   tle_spacecraft_uri character varying(250),
@@ -49,6 +51,7 @@ CREATE TABLE observations
   azimuth_rate double precision NOT NULL,
   elevation double precision NOT NULL,
   elevation_rate double precision NOT NULL,
+  relative_velocity double precision NOT NULL,
   FOREIGN KEY (spacecraft) REFERENCES spacecraft (id) ON DELETE CASCADE,
   UNIQUE (spacecraft, time)
 );

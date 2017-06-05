@@ -22,7 +22,7 @@ void _print_usage(void)
 void print_next_point(PGconn *conn)
 {
     PGresult *res = PQexec(conn
-        , "SELECT schedule.time, spacecraft.name, round(degrees(observations.azimuth)), round(degrees(observations.elevation)) FROM (SELECT * FROM schedule WHERE time > NOW() ORDER BY time LIMIT 1) AS schedule INNER JOIN observations ON schedule.spacecraft=observations.spacecraft AND schedule.time=observations.time INNER JOIN spacecraft ON schedule.spacecraft=spacecraft.id;");
+        , "SELECT schedule.time, spacecraft.name, round(degrees(observations.azimuth)), round(degrees(observations.elevation)), spacecraft.frequency_downlink-(spacecraft.frequency_downlink*(observations.relative_velocity/3e8)) AS downlink, spacecraft.frequency_uplink-(spacecraft.frequency_uplink*(observations.relative_velocity/3e8)) AS uplink FROM (SELECT * FROM schedule WHERE time > NOW() ORDER BY time LIMIT 1) AS schedule INNER JOIN observations ON schedule.spacecraft=observations.spacecraft AND schedule.time=observations.time INNER JOIN spacecraft ON schedule.spacecraft=spacecraft.id;");
     if(PQresultStatus(res) != PGRES_TUPLES_OK)
     {
         printf("Error: Next Point Select query failed!\n");
@@ -38,11 +38,13 @@ void print_next_point(PGconn *conn)
         PQclear(res);
         return;
     }
-    printf("%s: %d, %d, [%s]\n"
+    printf("%s: %d, %d, [%s] Downlink: %.6f MHz, Uplink: %.6f MHz\n"
         , PQgetvalue(res,0,0)
         , atoi(PQgetvalue(res,0,2))
         , atoi(PQgetvalue(res,0,3))
         , PQgetvalue(res,0,1)
+        , atof(PQgetvalue(res,0,4))
+        , atof(PQgetvalue(res,0,5))
     );
     PQclear(res);
 }
