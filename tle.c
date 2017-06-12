@@ -199,6 +199,17 @@ bool tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1)
   	return false;
   }
 
+  long http_code = 0;
+  curl_easy_getinfo (curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+  if(http_code != 200)
+  {
+    fprintf(stderr, " * * * Error: Download failed with HTTP status: %ld\n",
+      http_code);
+
+    free(tle_buffer.memory);
+    return false;
+  }
+
 	if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
 	{
 	  fprintf(stderr, " * * * Error: Spacecraft URI not found in downloaded TLE\n");
@@ -248,10 +259,23 @@ bool tle_download_spacetrack(char *url, char *user, char *password, char *craft_
     free(tle_buffer.memory);
     return false;
   }
+
+  /* Note that checking the HTTP code doesn't catch an incorrect password with Celestrak! */
+  long http_code = 0;
+  curl_easy_getinfo (curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
+  if(http_code != 200)
+  {
+    fprintf(stderr, " * * * Error: Download failed with HTTP status: %ld\n",
+      http_code);
+
+    free(tle_buffer.memory);
+    return false;
+  }
   
   if(!tle_extract(&tle_buffer, craft_uri, tle_0, tle_1))
   {
     fprintf(stderr, " * * * Error: Spacecraft URI not found in downloaded TLE\n");
+    fprintf(stderr, "        Note: SpaceTrack User/Password may be incorrect!\n");
 
     free(tle_buffer.memory);
     return false;
