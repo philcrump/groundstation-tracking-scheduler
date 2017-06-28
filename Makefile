@@ -21,6 +21,7 @@ SRCS = main.c \
 	track.c \
 	schedule.c \
 	time.c \
+	pgutil.c \
 	$(LIBPREDICT_SRCS)
 
 LIBS = -lpq -lcurl -lm
