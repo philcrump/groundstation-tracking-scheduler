@@ -108,8 +108,6 @@ void track_update_all(PGconn *conn)
       }
     }
 
-    // TODO: Insert remaining SQL buffer!
-
     printf(" * * * Done.\n");
     printf(" * * Calculating observations..\n");
 
@@ -160,8 +158,6 @@ void track_update_all(PGconn *conn)
         batch_sql_length = bufconcat(batch_sql_buffer, batch_sql_length, line_sql_buffer, line_sql_length);
       }
     }
-
-    // TODO: Insert remaining SQL buffer!
 
     printf(" * * * Done.\n");
 
