@@ -1,10 +1,8 @@
 #ifndef __TLE_DOWNLOAD_H__
 #define __TLE_DOWNLOAD_H__
 
-void tle_update_http(PGconn *conn);
-void tle_update_spacetrack(PGconn *conn, char *user, char *password);
+void tle_update(PGconn *conn, char *spacetrack_user, char *spacetrack_password);
 
-bool tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1);
-bool tle_download_spacetrack(char *url, char *user, char *password, char *craft_uri, char *tle_0, char *tle_1);
+bool tle_download(int catalog_id, char *spacetrack_user, char *spacetrack_password, char *tle_0, char *tle_1);
 
 #endif /* __TLE_DOWNLOAD_H__ */

@@ -74,11 +74,8 @@ int main(int argc, char *argv[])
         , PQserverVersion(conn), PQlibVersion()
     );
 
-    printf("Updating TLEs from celestrak..\n");
-    tle_update_http(conn);
-    
-    printf("Updating TLEs from spacetrack..\n");
-    tle_update_spacetrack(conn, config.spacetrack_user, config.spacetrack_passwd);
+    printf("Updating TLEs..\n");
+    tle_update(conn, config.spacetrack_user, config.spacetrack_passwd);
 
     printf("Updating Tracks..\n");
     track_update_all(conn); 
