@@ -177,8 +177,6 @@ bool tle_download_http(char *url, char *craft_uri, char *tle_0, char *tle_1)
   curl_handle = curl_easy_init();
   curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "gss/0.1");
   curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1L);
-  /* Allow insecure TLSv1.0 ciphers (looking at you celestrak..) */
-  curl_easy_setopt(curl_handle, CURLOPT_SSL_CIPHER_LIST, "DES-CBC3-SHA DHE-DSS-DES-CBC3-SHA DHE-RSA-DES-CBC3-SHA ADH-RC4-MD5 ADH-DES-CBC3-SHA DEFAULT");
    
   curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 
