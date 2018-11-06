@@ -1,7 +1,8 @@
 CC = gcc
-CFLAGS = -gdwarf-3 -Og -Wall
+COPT = -O3
+CFLAGS = -Wall -Wextra -Wpedantic -Werror -std=gnu11 -D_GNU_SOURCE
 CFLAGS += -D BUILD_VERSION="\"$(shell git describe --dirty --always)\""	\
-		-D BUILD_DATE="\"$(shell date '+%Y-%m-%d %H:%M:%S')\""
+		-D BUILD_DATE="\"$(shell date '+%Y-%m-%d_%H:%M:%S')\""
 
 LIBPREDICT_DIR = ../libpredict
 LIBPREDICT_SRCS = $(LIBPREDICT_DIR)/julian_date.c \
@@ -14,18 +15,21 @@ LIBPREDICT_SRCS = $(LIBPREDICT_DIR)/julian_date.c \
 		$(LIBPREDICT_DIR)/unsorted.c
 
 BIN = gss-client
-SRCS = client.c \
+SRC = client.c \
 	../config.c \
 	../minIni.c \
 	../time.c \
 	$(LIBPREDICT_SRCS)
 
+LIBSDIR = -I/usr/include/postgresql
 LIBS = -lpq -lcurl -lm
-INCLUDES = -I/usr/include/postgresql
 
 all:
-	$(CC) $(CFLAGS) $(SRCS) -o $(BIN) $(LIBS) $(INCLUDES)
+	$(CC) $(COPT) $(CFLAGS) $(SRC) -o $(BIN) $(LIBSDIR) $(LIBS)
+
+debug: COPT = -Og -ggdb -fno-omit-frame-pointer -D__DEBUG
+debug: all
 
 clean:
-	rm -fv *.o $(BIN)
+	rm -fv $(BIN)
 
