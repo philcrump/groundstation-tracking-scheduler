@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <inttypes.h>
 
 #include <libpq-fe.h> 
 #include <curl/curl.h>
@@ -140,6 +142,60 @@ static size_t curl_buffer_cb(void *contents, size_t size, size_t nmemb, void *us
   return realsize;
 }
 
+static bool tle_checksum(char *tle_0, char *tle_1)
+{
+  char char_a, char_b;
+  int i, check_a, check_b;
+
+  if(strlen(tle_0) < 70)
+  {
+    return false;
+  }
+
+  if(strlen(tle_1) < 70)
+  {
+    return false;
+  }
+
+  check_a = 0;
+  check_b = 0;
+
+  for(i=0; i<68; i++)
+  {
+    char_a = tle_0[i];
+    if(isdigit(char_a))
+    {
+      check_a += char_a - '0';
+    }
+    else if(char_a == '-')
+    {
+      check_a += 1;
+    }
+    
+    char_b = tle_1[i];
+    if(isdigit(char_b))
+    {
+      check_b += char_b - '0';
+    }
+    else if(char_b == '-')
+    {
+      check_b += 1;
+    }
+  }
+
+  if((check_a % 10) != (tle_0[68] - '0'))
+  {
+    return false;
+  }
+  
+  if((check_b % 10) != (tle_1[68] - '0'))
+  {
+    return false;
+  }
+
+  return true;
+}
+
 static bool tle_extract(curl_buffer *tle_buffer, char *craft_uri, char *tle_0, char *tle_1)
 {
   char *tle_line;
@@ -155,7 +211,11 @@ static bool tle_extract(curl_buffer *tle_buffer, char *craft_uri, char *tle_0, c
       /* Found spacecraft */
       strcpy(tle_0,strtok(NULL, newline));
       strcpy(tle_1,strtok(NULL, newline));
-      return true;
+
+      if(tle_checksum(tle_0, tle_1))
+      {
+        return true;
+      }
     }
     tle_line = strtok(NULL, newline);
   }
