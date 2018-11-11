@@ -1,4 +1,4 @@
-# Groundstation Tracking Scheduler
+# Groundstation Tracking Scheduler [![Build Status](https://travis-ci.org/philcrump/groundstation-tracking-scheduler.svg?branch=master)](https://travis-ci.org/philcrump/groundstation-tracking-scheduler)
 
 This software aims to automate the computation of a tracking schedule for a satellite groundstation, using a list of spacecraft with associated unique priority levels.
 
