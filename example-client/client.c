@@ -38,11 +38,11 @@ void print_next_point(PGconn *conn)
         PQclear(res);
         return;
     }
-    printf("%s: %d, %d, [%s] Downlink: %.6f MHz, Uplink: %.6f MHz\n"
+    printf("%s: [%s] %+3d° AZ, %+3d° EL, Down: %.6f MHz, Up: %.6f MHz\n"
         , PQgetvalue(res,0,0)
+        , PQgetvalue(res,0,1)
         , atoi(PQgetvalue(res,0,2))
         , atoi(PQgetvalue(res,0,3))
-        , PQgetvalue(res,0,1)
         , atof(PQgetvalue(res,0,4))
         , atof(PQgetvalue(res,0,5))
     );
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 {
     fprintf(stdout,
         "gs-scheduler "BUILD_VERSION" (built "BUILD_DATE")\n"
-        "Phil Crump 2017\n"
+        "Phil Crump 2018\n"
     );
     
     int opt, c;
