@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 {
     fprintf(stdout,
         "gs-scheduler "BUILD_VERSION" (built "BUILD_DATE")\n"
-        "Phil Crump 2017\n"
+        "Phil Crump 2018\n"
     );
     
     int opt, c;

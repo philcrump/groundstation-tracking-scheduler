@@ -45,14 +45,21 @@ void tle_update_http(PGconn *conn)
           continue;
         }
 
-        predict_orbital_elements_t *tle;
-        tle = predict_parse_tle((char **)tle_lines);
+        predict_orbital_elements_t tle;
+        struct predict_sgp4 sgp;
+        struct predict_sdp4 sdp;
+
+        if(!predict_parse_tle(&tle, tle_lines[0], tle_lines[1], &sgp, &sdp))
+        {
+          fprintf(stderr, " * * Error: Parsing TLE failed!\n");
+          continue;
+        }
 
         char sql_stmt[200];
         snprintf(sql_stmt,200
             , "UPDATE spacecraft SET tle_lines_0 = $1, tle_lines_1 = $2, tle_updated = NOW(), tle_epoch = (make_timestamp(%d, 1,1,0,0,0) + interval '%f days') WHERE id=%d;"
-            , (2000+tle->epoch_year)
-            , (tle->epoch_day-1)
+            , (2000+tle.epoch_year)
+            , (tle.epoch_day-1)
             , row_id
         );
         PGresult *sres = PQexecParams(conn, sql_stmt, 2, NULL, (const char * const*)tle_lines, NULL, NULL, 0);
@@ -99,14 +106,21 @@ void tle_update_spacetrack(PGconn *conn, char *user, char *password)
           continue;
         }
 
-        predict_orbital_elements_t *tle;
-        tle = predict_parse_tle((char **)tle_lines);
+        predict_orbital_elements_t tle;
+        struct predict_sgp4 sgp;
+        struct predict_sdp4 sdp;
+
+        if(!predict_parse_tle(&tle, tle_lines[0], tle_lines[1], &sgp, &sdp))
+        {
+          fprintf(stderr, " * * Error: Parsing TLE failed!\n");
+          continue;
+        }
 
         char sql_stmt[200];
         snprintf(sql_stmt,200
             , "UPDATE spacecraft SET tle_lines_0 = $1, tle_lines_1 = $2, tle_updated = NOW(), tle_epoch = (make_timestamp(%d, 1,1,0,0,0) + interval '%f days') WHERE id=%d;"
-            , (2000+tle->epoch_year)
-            , (tle->epoch_day-1)
+            , (2000+tle.epoch_year)
+            , (tle.epoch_day-1)
             , row_id
         );
         PGresult *sres = PQexecParams(conn, sql_stmt, 2, NULL, (const char * const*)tle_lines, NULL, NULL, 0);

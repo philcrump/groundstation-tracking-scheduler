@@ -42,11 +42,21 @@ void track_update_all(PGconn *conn)
     strncpy(tle_lines[0],PQgetvalue(res, i, 2),150);
     strncpy(tle_lines[1],PQgetvalue(res, i, 3),150);
 
-    predict_orbital_elements_t *tle = predict_parse_tle((char **)tle_lines);
-    struct predict_orbit orbit;
-    predict_observer_t *observer;
-    observer = predict_create_observer("Self", config.latitude*3.14159/180.0, config.longitude*3.14159/180.0, config.altitude);
+    predict_orbital_elements_t tle;
+    struct predict_sgp4 sgp;
+    struct predict_sdp4 sdp;
+    struct predict_position orbit;
+    predict_observer_t observer;
     struct predict_observation observation;
+
+    if(!predict_parse_tle(&tle, tle_lines[0], tle_lines[1], &sgp, &sdp))
+    {
+      fprintf(stderr, " * * Error parsing TLE\n");
+      PQclear(res); 
+      return;
+    }
+
+    predict_create_observer(&observer, "Self", config.latitude*3.14159/180.0, config.longitude*3.14159/180.0, config.altitude);
 
     uint64_t curr_timestamp_s = timestamp_s();
     uint64_t calc_timestamp_s;
@@ -76,7 +86,7 @@ void track_update_all(PGconn *conn)
       calc_timestamp_s = curr_timestamp_s + j;
       calc_datetime = julian_from_timestamp_ms(calc_timestamp_s * 1000);
 
-      predict_orbit(tle, &orbit, calc_datetime);
+      predict_orbit(&tle, &orbit, calc_datetime);
       line_sql_length = sprintf(
           line_sql_buffer
           ,"((TIMESTAMP 'epoch' + INTERVAL '%ld seconds'),%d,(%f,%f,%f),(%f,%f,%f)), "
@@ -126,8 +136,8 @@ void track_update_all(PGconn *conn)
       calc_timestamp_s = curr_timestamp_s + j;
       calc_datetime = julian_from_timestamp_ms(calc_timestamp_s * 1000);
 
-      predict_orbit(tle, &orbit, calc_datetime);
-      predict_observe_orbit(observer, &orbit, &observation);
+      predict_orbit(&tle, &orbit, calc_datetime);
+      predict_observe_orbit(&observer, &orbit, &observation);
 
       line_sql_length = sprintf(
             line_sql_buffer
