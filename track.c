@@ -64,10 +64,10 @@ void track_update_all(PGconn *conn)
     PGresult *calc_res;
 
     char line_sql_buffer[250];
-    uint32_t line_sql_length;
+    int line_sql_length;
 
     char batch_sql_buffer[SQL_BATCH_BUFFER_SIZE];
-    uint32_t batch_sql_length;
+    int batch_sql_length;
 
     printf(" * * Calculating positions..\n");
 
@@ -118,7 +118,20 @@ void track_update_all(PGconn *conn)
       }
     }
 
-    // TODO: Insert remaining SQL buffer!
+    if(batch_sql_length > position_sql_start_length)
+    {
+      /* Cut trailing comma + space off */
+      batch_sql_buffer[batch_sql_length - 2] = '\0';
+
+      bufconcat(batch_sql_buffer, batch_sql_length, position_sql_end, position_sql_end_length);
+
+      calc_res = PQexec(conn,batch_sql_buffer);
+      if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
+      {
+          printf("Error: Final Position batch insert failed! : %s\n", batch_sql_buffer);
+      }
+      PQclear(calc_res);
+    }
 
     printf(" * * * Done.\n");
     printf(" * * Calculating observations..\n");
@@ -171,7 +184,20 @@ void track_update_all(PGconn *conn)
       }
     }
 
-    // TODO: Insert remaining SQL buffer!
+    if(batch_sql_length > observation_sql_start_length)
+    {
+      /* Cut trailing comma + space off */
+      batch_sql_buffer[batch_sql_length - 2] = '\0';
+
+      bufconcat(batch_sql_buffer, batch_sql_length, observation_sql_end, observation_sql_end_length);
+
+      calc_res = PQexec(conn,batch_sql_buffer);
+      if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
+      {
+          printf("Error: Final Observation batch insert failed! : %s\n", batch_sql_buffer);
+      }
+      PQclear(calc_res);
+    }
 
     printf(" * * * Done.\n");
 
