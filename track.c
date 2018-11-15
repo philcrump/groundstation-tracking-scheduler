@@ -12,7 +12,7 @@
 #include "libpredict/predict.h"
 #include "pgutil.h"
 
-#define SQL_BATCH_BUFFER_SIZE   1048576
+#define SQL_BATCH_BUFFER_SIZE   (1024*1024)
 
 void track_update_all(PGconn *conn)
 {
@@ -76,7 +76,7 @@ void track_update_all(PGconn *conn)
     char *position_sql_end = " ON CONFLICT (spacecraft, time) DO UPDATE SET position = excluded.position, velocity = excluded.velocity;";
     int position_sql_end_length = 105;
 
-    strcpy(batch_sql_buffer, position_sql_start);
+    memcpy(batch_sql_buffer, position_sql_start, position_sql_start_length);
     batch_sql_length = position_sql_start_length;
 
     pg_transaction_begin(conn);
@@ -95,40 +95,41 @@ void track_update_all(PGconn *conn)
           , orbit.position[0], orbit.position[1], orbit.position[2]
           , orbit.velocity[0], orbit.velocity[1], orbit.velocity[2]
       );
-      if(batch_sql_length + line_sql_length + 105 + 2 + 1 >= SQL_BATCH_BUFFER_SIZE) // TODO check length calcs
+      if(batch_sql_length + line_sql_length + position_sql_end_length > SQL_BATCH_BUFFER_SIZE)
       {
         /* Cut trailing comma + space off */
-        batch_sql_buffer[batch_sql_length - 2] = '\0';
+        batch_sql_length -= 2;
 
-        bufconcat(batch_sql_buffer, batch_sql_length, position_sql_end, position_sql_end_length);
+        memcpy(&batch_sql_buffer[batch_sql_length], position_sql_end, position_sql_end_length+1);
 
-        calc_res = PQexec(conn,batch_sql_buffer);
+        calc_res = PQexec(conn, batch_sql_buffer);
         if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
         {
-            printf("Error: Position batch insert failed! : %s\n", batch_sql_buffer);
+            printf("Error: Position batch insert failed! : %s\n", PQerrorMessage(conn));
         }
         PQclear(calc_res);
 
-        strcpy(batch_sql_buffer, position_sql_start);
+        memcpy(batch_sql_buffer, position_sql_start, position_sql_start_length);
         batch_sql_length = position_sql_start_length;
       }
       else
       {
-        batch_sql_length = bufconcat(batch_sql_buffer, batch_sql_length, line_sql_buffer, line_sql_length);
+        memcpy(&batch_sql_buffer[batch_sql_length], line_sql_buffer, line_sql_length);
+        batch_sql_length += line_sql_length;
       }
     }
 
     if(batch_sql_length > position_sql_start_length)
     {
       /* Cut trailing comma + space off */
-      batch_sql_buffer[batch_sql_length - 2] = '\0';
+      batch_sql_length -= 2;
 
-      bufconcat(batch_sql_buffer, batch_sql_length, position_sql_end, position_sql_end_length);
+      memcpy(&batch_sql_buffer[batch_sql_length], position_sql_end, position_sql_end_length+1);
 
-      calc_res = PQexec(conn,batch_sql_buffer);
+      calc_res = PQexec(conn, batch_sql_buffer);
       if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
       {
-          printf("Error: Final Position batch insert failed! : %s\n", batch_sql_buffer);
+          printf("Error: Final Position batch insert failed! : %s\n", PQerrorMessage(conn));
       }
       PQclear(calc_res);
     }
@@ -141,7 +142,7 @@ void track_update_all(PGconn *conn)
     char *observation_sql_end = " ON CONFLICT (spacecraft, time) DO UPDATE SET azimuth = excluded.azimuth, azimuth_rate = excluded.azimuth_rate, elevation = excluded.elevation, elevation_rate = excluded.elevation_rate;";
     int observation_sql_end_length = 185;
 
-    strcpy(batch_sql_buffer, observation_sql_start);
+    memcpy(batch_sql_buffer, observation_sql_start, observation_sql_start_length);
     batch_sql_length = observation_sql_start_length;
 
     for(int j=0; j<(60*60*24*7); j++)
@@ -161,40 +162,41 @@ void track_update_all(PGconn *conn)
             , observation.elevation, observation.elevation_rate
             , (observation.range_rate*1000)
       );
-      if(batch_sql_length + line_sql_length + 185 + 2 + 1 >= SQL_BATCH_BUFFER_SIZE) // TODO check length calcs
+      if(batch_sql_length + line_sql_length + observation_sql_end_length > SQL_BATCH_BUFFER_SIZE)
       {
         /* Cut trailing comma + space off */
-        batch_sql_buffer[batch_sql_length - 2] = '\0';
+        batch_sql_length -= 2;
 
-        bufconcat(batch_sql_buffer, batch_sql_length, observation_sql_end, observation_sql_end_length);
+        memcpy(&batch_sql_buffer[batch_sql_length], observation_sql_end, observation_sql_end_length+1);
 
-        calc_res = PQexec(conn,batch_sql_buffer);
+        calc_res = PQexec(conn, batch_sql_buffer);
         if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
         {
-            printf("Error: Observation batch insert failed! : %s\n", batch_sql_buffer);
+            printf("Error: Observation batch insert failed! : %s\n", PQerrorMessage(conn));
         }
         PQclear(calc_res);
 
-        strcpy(batch_sql_buffer, observation_sql_start);
+        memcpy(batch_sql_buffer, observation_sql_start, observation_sql_start_length);
         batch_sql_length = observation_sql_start_length;
       }
       else
       {
-        batch_sql_length = bufconcat(batch_sql_buffer, batch_sql_length, line_sql_buffer, line_sql_length);
+        memcpy(&batch_sql_buffer[batch_sql_length], line_sql_buffer, line_sql_length);
+        batch_sql_length += line_sql_length;
       }
     }
 
     if(batch_sql_length > observation_sql_start_length)
     {
       /* Cut trailing comma + space off */
-      batch_sql_buffer[batch_sql_length - 2] = '\0';
+      batch_sql_length -= 2;
 
-      bufconcat(batch_sql_buffer, batch_sql_length, observation_sql_end, observation_sql_end_length);
+      memcpy(&batch_sql_buffer[batch_sql_length], observation_sql_end, observation_sql_end_length+1);
 
-      calc_res = PQexec(conn,batch_sql_buffer);
+      calc_res = PQexec(conn, batch_sql_buffer);
       if(PQresultStatus(calc_res) != PGRES_COMMAND_OK)
       {
-          printf("Error: Final Observation batch insert failed! : %s\n", batch_sql_buffer);
+          printf("Error: Final Observation batch insert failed! : %s\n", PQerrorMessage(conn));
       }
       PQclear(calc_res);
     }
