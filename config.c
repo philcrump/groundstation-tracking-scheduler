@@ -65,6 +65,11 @@ bool config_load(config_t *config, char *filename)
         "Tracking","elevation_rate", 1.0,
         filename
     );
+
+    config->minimum_elevation = ini_getf(
+        "Tracking","minimum_elevation", 1.0,
+        filename
+    );
     config->minimum_interval = ini_getf(
         "Tracking","minimum_interval", 0.5,
         filename

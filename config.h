@@ -23,12 +23,14 @@ typedef struct config_t {
     double latitude;
     double longitude;
     double altitude;
+
     /* Earth Station Tracking Variables configured by user */
     double azimuth_endstop;
     double azimuth_rate;
     double elevation_rate;
 
     /* Scheduler Variables configured by user */
+    double minimum_elevation;
     double minimum_interval;
     double minimum_period;
 } config_t;

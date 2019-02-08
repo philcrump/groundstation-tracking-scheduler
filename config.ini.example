@@ -15,5 +15,6 @@ altitude=0
 azimuth_endstop=0
 azimuth_rate=1
 elevation_rate=1
+minimum_elevation=3.0
 minimum_interval=0.5
 minimum_period=10

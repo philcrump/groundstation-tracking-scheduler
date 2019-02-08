@@ -11,6 +11,8 @@
 #include "tle.h"
 #include "libpredict/predict.h"
 
+#define RADIANS_FROM_DEGREES(x)   (x*(3.1415926536/180.0))
+
 void schedule_update_all(PGconn *conn)
 {
     PGresult *res = PQexec(conn, "SELECT id FROM spacecraft WHERE (SELECT updated FROM schedule_meta) < (SELECT MAX(track_updated) FROM spacecraft) ORDER BY priority ASC;");
@@ -55,8 +57,9 @@ void schedule_update_all(PGconn *conn)
     {
         int spacecraft_id = atoi(PQgetvalue(res,i,0));
         snprintf(visible_query, 200
-            , "SELECT time FROM observations WHERE spacecraft=%d AND elevation>0 ORDER BY TIME ASC;"
+            , "SELECT time FROM observations WHERE spacecraft=%d AND elevation>%f ORDER BY TIME ASC;"
             , spacecraft_id
+            , RADIANS_FROM_DEGREES(config.minimum_elevation)
         );
         PGresult *spacecraft_visible = PQexec(conn,visible_query);
         if(PQresultStatus(spacecraft_visible) != PGRES_TUPLES_OK)
